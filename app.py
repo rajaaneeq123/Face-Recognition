@@ -33,6 +33,7 @@ detector = vision.FaceLandmarker.create_from_options(options)
 
 camera = None
 current_identity = "Scanning"
+last_face_location = None
 
 def generate_frames():
     global camera, current_identity
@@ -59,20 +60,26 @@ def generate_frames():
 
                         cv2.circle( img=frame, center=(x_pixel, y_pixel), radius=1, color=(255, 255, 0), )
 
-            if counter % 10 == 0:
+            if counter % 20 == 0:
                 face_locations = face_recognition.face_locations(rgb_frame)
                 face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
                 current_identity = "Unknown"
+                last_face_location = None
+
                 for face_encoding in face_encodings:
                     matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
                     if True in matches:
                         match_index = matches.index(True)
                         current_identity = known_face_names[match_index]
 
+                    last_face_location = face_locations[0]
+
             counter += 1
 
-            cv2.putText(frame, f"ID: {current_identity}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            if last_face_location and current_identity != "Scanning...":
+                t, r, b, l = last_face_location
+                cv2.putText( frame, f"ID: {current_identity}", (l, t - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2 )
 
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
