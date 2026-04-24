@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Recognition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="scanline"></div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 3h4v4H3zM17 3h4v4h-4zM3 17h4v4H3zM17 17h4v4h-4z" fill="currentColor" opacity="0.4"/>
+          <path d="M7 12H3M21 12h-4M12 7V3M12 21v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span>FaceID System</span>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">Initializing...</span>
+    </div>
+    <div class="fps-counter" id="fpsCounter">-- FPS</div>
+  </header>
+
+  <main>
+    <div class="camera-container">
+      <div class="camera-frame">
+
+     <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <img id="videoFeed" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+
+        <div class="scan-line" id="scanLine"></div>
+
+        <div class="no-camera" id="noCameraMsg">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            <p>Camera not started</p>
+            <small>Click "Start Camera" below</small>
+        </div>
+    </div>
+      <div class="scan-grid" id="scanGrid">
+        <div class="grid-dot" style="--d:0.1s"></div>
+        <div class="grid-dot" style="--d:0.3s"></div>
+        <div class="grid-dot" style="--d:0.5s"></div>
+        <div class="grid-dot" style="--d:0.7s"></div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel-section">
+        <div class="panel-label">Camera Control</div>
+        <button class="btn btn-primary" id="startBtn" onclick="startCamera()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          Start Camera
+        </button>
+        <button class="btn btn-danger" id="stopBtn" onclick="stopCamera()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          Stop Camera
+        </button>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-label">Recognition Settings</div>
+        <div class="toggle-row">
+          <span>Live Recognition</span>
+          <label class="toggle">
+            <input type="checkbox" id="liveToggle" checked onchange="toggleLive(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <span>Interval</span>
+          <select id="intervalSelect" onchange="updateInterval(this.value)">
+            <option value="500">Fast (0.5s)</option>
+            <option value="1000" selected>Normal (1s)</option>
+            <option value="2000">Slow (2s)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-label">Detected Faces</div>
+        <div class="face-list" id="faceList">
+          <div class="no-faces">No faces detected yet</div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-label">Session Stats</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="statScans">0</div>
+            <div class="stat-label">Scans</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statFaces">0</div>
+            <div class="stat-label">Faces found</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statKnown">0</div>
+            <div class="stat-label">Recognized</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statUnknown">0</div>
+            <div class="stat-label">Unknown</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <div class="panel-label">Activity Log</div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </main>
+
+  <canvas id="capture" style="display:none"></canvas>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
