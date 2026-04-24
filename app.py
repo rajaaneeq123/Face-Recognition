@@ -1,16 +1,28 @@
+from flask import Flask, render_template, Response
+import face_recognition
+import os
 import cv2
 import time
-from flask import Flask, render_template, Response
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 from mediapipe.tasks.python import BaseOptions
 
 app = Flask(__name__)
 
-model_path = "face_landmarker.task"
+known_face_encodings = []
+known_face_names = []
+
+if os.path.exists("known_faces"):
+    for filename in os.listdir("known_faces"):
+        if filename.endswith((".jpg", ".png")):
+            encoding_image = face_recognition.load_image_file(f"known_faces/{filename}")
+            face_encodings = face_recognition.face_encodings(encoding_image)
+            if len(face_encodings) > 0:
+                known_face_encodings.append(face_encodings[0])
+                known_face_names.append(os.path.splitext(filename)[0].capitalize())
 
 options = vision.FaceLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=model_path),
+    base_options=BaseOptions(model_asset_path="face_landmarker.task"),
     running_mode=vision.RunningMode.VIDEO, # Optimized for continuous frames
     num_faces=1,
     min_face_detection_confidence=0.5,
@@ -20,9 +32,11 @@ options = vision.FaceLandmarkerOptions(
 detector = vision.FaceLandmarker.create_from_options(options)
 
 camera = None
+current_identity = "Scanning"
 
 def generate_frames():
-    global camera
+    global camera, current_identity
+    counter = 0
     while(True):
         if camera is None:
             break
@@ -40,19 +54,25 @@ def generate_frames():
             if detection_result.face_landmarks:
                 for face_landmarks in detection_result.face_landmarks:
                     for landmark in face_landmarks:
-                        # MediaPipe gives 'normalized' coordinates (0.0 to 1.0)
-                        # We multiply by frame width/height to get actual pixel positions
                         x_pixel = int(landmark.x * frame.shape[1])
                         y_pixel = int(landmark.y * frame.shape[0])
 
-                        # Draw a tiny cyan circle at every landmark point
-                        cv2.circle(
-                            img=frame,
-                            center=(x_pixel, y_pixel),
-                            radius=1,
-                            color=(255, 255, 0),  # Cyan/Yellow-ish
-                            thickness=-1
-                        )
+                        cv2.circle( img=frame, center=(x_pixel, y_pixel), radius=1, color=(255, 255, 0), )
+
+            if counter % 10 == 0:
+                face_locations = face_recognition.face_locations(rgb_frame)
+                face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+                current_identity = "Unknown"
+                for face_encoding in face_encodings:
+                    matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                    if True in matches:
+                        match_index = matches.index(True)
+                        current_identity = known_face_names[match_index]
+
+            counter += 1
+
+            cv2.putText(frame, f"ID: {current_identity}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
@@ -85,4 +105,4 @@ def stop_camera():
     return "camera stopped"
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
