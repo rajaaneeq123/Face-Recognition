@@ -40,3 +40,32 @@ function stopCamera() {
             console.log("Camera stopped and UI reset.");
         });
 }
+
+function updateStats() {
+    fetch('/get_stats')
+        .then(response => response.json())
+        .then(data => {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            if (data.status === "ACTIVE") {
+                statusDot.classList.add('active');
+                statusText.innerText = "System Live";
+                statusText.style.color = "#00ffcc";
+            } else {
+                statusDot.classList.remove('active');
+                statusText.innerText = "System Idle";
+                statusText.style.color = "#ff3366";
+            }
+
+            const facesFound = document.getElementById('statFaces');
+            if (facesFound) facesFound.innerText = data.face_found;
+
+            const statKnown = document.getElementById('statKnown');
+            if (statKnown) {
+                statKnown.innerText = (data.current_user !== "Unknown" && data.current_user !== "Scanning...") ? "1" : "0";
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+setInterval(updateStats, 1000);

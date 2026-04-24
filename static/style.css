@@ -62,15 +62,24 @@ header {
 }
 
 .status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--text-muted);
-  transition: background 0.3s;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background-color: #ff3366; /* Default to Red/Idle */
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+    transition: all 0.3s ease;
+    margin-right: 8px;
 }
-.status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s infinite; }
-.status-dot.scanning { background: var(--blue); box-shadow: 0 0 8px var(--blue); animation: blink 1s infinite; }
+.status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+.status-dot.scanning { background: var(--blue); box-shadow: 0 0 8px var(--blue); animation: pulse 1s infinite; }
 .status-dot.error { background: var(--red); }
 
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
 
 .status-text { font-size: 13px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
 

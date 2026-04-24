@@ -12,6 +12,23 @@ app = Flask(__name__)
 known_face_encodings = []
 known_face_names = []
 
+for person_name in os.listdir("known_faces"):
+    person_dir = os.path.join("known_faces", person_name)
+
+    if os.path.isdir(person_dir):
+        for image_filename in os.listdir(person_dir):
+            image_path = os.path.join(person_dir, image_filename)
+
+            # Load and encode the image
+            image = face_recognition.load_image_file(image_path)
+            encodings = face_recognition.face_encodings(image)
+
+            if len(encodings) > 0:
+                known_face_encodings.append(encodings[0])
+                known_face_names.append(person_name)
+
+print(f"Loaded {len(known_face_names)} images for {len(set(known_face_names))} people.")
+
 if os.path.exists("known_faces"):
     for filename in os.listdir("known_faces"):
         if filename.endswith((".jpg", ".png")):
@@ -34,9 +51,11 @@ detector = vision.FaceLandmarker.create_from_options(options)
 camera = None
 current_identity = "Scanning"
 last_face_location = None
+face_count = 0
+start_time = None
 
 def generate_frames():
-    global camera, current_identity
+    global camera, current_identity, face_count
     counter = 0
     while(True):
         if camera is None:
@@ -53,12 +72,15 @@ def generate_frames():
             detection_result = detector.detect_for_video(mp_image, frame_timestamp_ms)
 
             if detection_result.face_landmarks:
+                face_count = len(detection_result.face_landmarks)
                 for face_landmarks in detection_result.face_landmarks:
                     for landmark in face_landmarks:
                         x_pixel = int(landmark.x * frame.shape[1])
                         y_pixel = int(landmark.y * frame.shape[0])
 
                         cv2.circle( img=frame, center=(x_pixel, y_pixel), radius=1, color=(255, 255, 0), )
+            else:
+                face_count = 0;
 
             if counter % 20 == 0:
                 face_locations = face_recognition.face_locations(rgb_frame)
@@ -98,9 +120,10 @@ def video_feed():
 
 @app.route('/start_camera')
 def start_camera():
-    global camera
+    global camera, start_time
     if camera is None:
         camera = cv2.VideoCapture(0)
+        start_time = time.time()
     return "camera started"
 
 @app.route('/stop_camera')
@@ -110,6 +133,18 @@ def stop_camera():
         camera.release()
         camera = None
     return "camera stopped"
+
+@app.route('/get_stats')
+def get_stats():
+    global face_count, start_time
+
+    duration = "00:00"
+    if start_time:
+        elapsed = int(time.time() - start_time)
+        mins, secs = divmod(elapsed, 60)
+        duration = f"{mins:02d}:{secs:02d}"
+
+    return {"face_found": face_count, "session_time": duration, "status": "ACTIVE" if camera is not None else "IDLE", "current_user": current_identity }
 
 if __name__ == '__main__':
     app.run(debug=True)
