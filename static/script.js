@@ -1,22 +1,33 @@
+let statsIntervalId = setInterval(updateStats, 1000);
+
+let lastLoggedIdentity = "";
+
+function addLog(message) {
+    const log = document.getElementById('log');
+    if (!log) return;
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    const now = new Date();
+    const ts = now.toTimeString().slice(0, 8);
+    entry.textContent = `[${ts}] ${message}`;
+    log.prepend(entry);
+    if (log.children.length > 50) log.removeChild(log.lastChild);
+}
+
 function startCamera() {
     const img = document.getElementById('videoFeed');
     const msg = document.getElementById('noCameraMsg');
-
-    const startBtn = document.querySelector('button[onclick="startCamera()"]');
-    const stopBtn = document.querySelector('button[onclick="stopCamera()"]');
-
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
     fetch('/start_camera')
         .then(response => {
             if (response.ok) {
                 img.src = "/video_feed";
                 img.style.display = "block";
                 msg.style.display = "none";
-
-                // TOGGLE BUTTONS: Disable Start, Enable Stop
-                if(startBtn) startBtn.disabled = true;
-                if(stopBtn) stopBtn.disabled = false;
-
-                console.log("Camera started and UI updated.");
+                if (startBtn) startBtn.disabled = true;
+                if (stopBtn) stopBtn.disabled = false;
+                addLog("Camera started.");
             }
         });
 }
@@ -24,22 +35,39 @@ function startCamera() {
 function stopCamera() {
     const img = document.getElementById('videoFeed');
     const msg = document.getElementById('noCameraMsg');
-    const startBtn = document.querySelector('button[onclick="startCamera()"]');
-    const stopBtn = document.querySelector('button[onclick="stopCamera()"]');
-
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
     img.src = "";
     img.style.display = "none";
     msg.style.display = "flex";
-
     fetch('/stop_camera')
         .then(() => {
-            // TOGGLE BUTTONS: Enable Start, Disable Stop
-            if(startBtn) startBtn.disabled = false;
-            if(stopBtn) stopBtn.disabled = true;
-
-            console.log("Camera stopped and UI reset.");
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            const faceList = document.getElementById('faceList');
+            if (faceList) faceList.innerHTML = '<div class="no-faces">No faces detected yet</div>';
+            lastLoggedIdentity = "";
+            addLog("Camera stopped.");
         });
 }
+
+function toggleLive(checkbox) {
+    const state = checkbox.checked ? "on" : "off";
+    fetch(`/toggle_recognition/${state}`)
+        .then(() => {
+            if (!checkbox.checked) {
+                const faceList = document.getElementById('faceList');
+                if (faceList) faceList.innerHTML = '<div class="no-faces">No faces detected yet</div>';
+                lastLoggedIdentity = "";
+            }
+            addLog(`Live recognition ${checkbox.checked ? "enabled" : "paused"}.`);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('liveToggle');
+    if (toggle) toggle.addEventListener('change', () => toggleLive(toggle));
+});
 
 function updateStats() {
     fetch('/get_stats')
@@ -47,7 +75,6 @@ function updateStats() {
         .then(data => {
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-
             if (data.status === "ACTIVE") {
                 statusDot.classList.add('active');
                 statusText.innerText = "System Live";
@@ -58,14 +85,35 @@ function updateStats() {
                 statusText.style.color = "#ff3366";
             }
 
-            const facesFound = document.getElementById('statFaces');
-            if (facesFound) facesFound.innerText = data.face_found;
-
+            const statFaces = document.getElementById('statFaces');
             const statKnown = document.getElementById('statKnown');
-            if (statKnown) {
-                statKnown.innerText = (data.current_user !== "Unknown" && data.current_user !== "Scanning...") ? "1" : "0";
+            const statUnknown = document.getElementById('statUnknown');
+            const statTime = document.getElementById('statTime');
+            const fpsCounter = document.getElementById('fpsCounter');
+
+            if (statFaces) statFaces.innerText = data.face_found;
+            if (statKnown) statKnown.innerText = data.recognized;
+            if (statUnknown) statUnknown.innerText = data.unknown;
+            if (statTime) statTime.innerText = data.session_time || "00:00";
+            if (fpsCounter) fpsCounter.innerText = (data.fps || 0) + " FPS";
+
+            const faceList = document.getElementById('faceList');
+            if (faceList) {
+                if (data.status === "ACTIVE" && data.current_user && data.current_user !== "") {
+                    const isKnown = data.current_user !== "Unknown" && data.current_user !== "Scanning...";
+                    faceList.innerHTML = `
+                        <div class="face-entry" style="color: ${isKnown ? '#00ffcc' : '#ff3366'}">
+                            ${isKnown ? '✓' : '?'} ${data.current_user}
+                        </div>`;
+                } else {
+                    faceList.innerHTML = '<div class="no-faces">No faces detected yet</div>';
+                }
+            }
+
+            if (data.current_user && data.current_user !== lastLoggedIdentity && data.current_user !== "Scanning...") {
+                addLog(`Detected: ${data.current_user}`);
+                lastLoggedIdentity = data.current_user;
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(() => {});
 }
-setInterval(updateStats, 1000);

@@ -32,8 +32,7 @@
   <main>
     <div class="camera-container">
       <div class="camera-frame">
-
-     <div class="corner tl"></div>
+        <div class="corner tl"></div>
         <div class="corner tr"></div>
         <div class="corner bl"></div>
         <div class="corner br"></div>
@@ -43,13 +42,13 @@
         <div class="scan-line" id="scanLine"></div>
 
         <div class="no-camera" id="noCameraMsg">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-            </svg>
-            <p>Camera not started</p>
-            <small>Click "Start Camera" below</small>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <p>Camera not started</p>
+          <small>Click "Start Camera" below</small>
         </div>
-    </div>
+      </div>
       <div class="scan-grid" id="scanGrid">
         <div class="grid-dot" style="--d:0.1s"></div>
         <div class="grid-dot" style="--d:0.3s"></div>
@@ -76,18 +75,13 @@
         <div class="toggle-row">
           <span>Live Recognition</span>
           <label class="toggle">
-            <input type="checkbox" id="liveToggle" checked onchange="toggleLive(this)">
+            <input type="checkbox" id="liveToggle" checked>
             <span class="slider"></span>
           </label>
         </div>
-        <div class="setting-row">
-          <span>Interval</span>
-          <select id="intervalSelect" onchange="updateInterval(this.value)">
-            <option value="500">Fast (0.5s)</option>
-            <option value="1000" selected>Normal (1s)</option>
-            <option value="2000">Slow (2s)</option>
-          </select>
-        </div>
+{#        <div class="setting-row">#}
+{##}
+{#        </div>#}
       </div>
 
       <div class="panel-section">
@@ -101,8 +95,8 @@
         <div class="panel-label">Session Stats</div>
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-num" id="statScans">0</div>
-            <div class="stat-label">Scans</div>
+            <div class="stat-num" id="statTime">00:00</div>
+            <div class="stat-label">Session</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" id="statFaces">0</div>
